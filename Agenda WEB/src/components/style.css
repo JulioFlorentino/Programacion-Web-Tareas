@@ -158,3 +158,13 @@
 }
 
 
+@media (max-width: 768px) {
+  .sidebar {
+    display: none;
+  }
+
+  .home-content {
+    margin-left: 0;
+    width: 100%;
+  }
+}
