@@ -1,9 +1,17 @@
+import ConfessionForm from "../components/ConfessionForm";
+import ConfessionList from "../components/ConfessionList";
+
+import "./Home.css";
+
 export default function Home() {
   return (
-    <section>
-      <h1>Declaraciones Públicas 💌</h1>
-      <p>Aquí verás todas las declaraciones de amor públicas.</p>
-      {/* Aquí luego cargaremos la lista desde Firestore */}
+    <section className="home-container">
+      <h1>
+        Confieza tus secretos y comparte tus pensamientos con la comunidad. Aquí
+        puedes enviar confesiones anónimas y leer las de otros usuarios.
+      </h1>
+      <ConfessionForm />
+      <ConfessionList />
     </section>
   );
 }

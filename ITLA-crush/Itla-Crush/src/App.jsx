@@ -3,11 +3,12 @@ import "./App.css";
 import { Routes, Route } from "react-router-dom";
 
 //import routes
-import Navbar from "./components/navbar";
+import Navbar from "./components/Navbar";
 import Home from "./routes/Home";
-import Dashboard from "./routes/dashboard";
+
 import Login from "./routes/Auth/Login";
 import Signup from "./routes/Auth/Signup";
+import ConfessionForm from "./routes/ConfessionForm";
 
 export default function App() {
   return (
@@ -16,9 +17,9 @@ export default function App() {
       <main style={{ padding: "1rem" }}>
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/Dashboard" element={<Dashboard />} />
           <Route path="/Login" element={<Login />} />
           <Route path="/Signup" element={<Signup />} />
+          <Route path="/confess" element={<ConfessionForm />} />
         </Routes>
       </main>
     </>

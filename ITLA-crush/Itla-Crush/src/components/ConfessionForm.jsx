@@ -1,88 +1,116 @@
-import { useState } from "react";
-import UserSelect from "./UserSelect";
+import { useState, useEffect } from "react";
+import { db, auth } from "../firebase";
+import "./styles/ConfessionForm.css";
+import {
+  collection,
+  addDoc,
+  serverTimestamp,
+  getDocs,
+} from "firebase/firestore";
+import { onAuthStateChanged } from "firebase/auth";
 
 export default function ConfessionForm() {
-  const [anonymous, setAnonymous] = useState(false);
+  const [recipient, setRecipient] = useState("");
+  const [customRecipient, setCustomRecipient] = useState(""); // 👈 nuevo estado
+  const [message, setMessage] = useState("");
   const [isPublic, setIsPublic] = useState(true);
-  const [text, setText] = useState("");
-  const [recipientType, setRecipientType] = useState("user");
-  const [recipientUid, setRecipientUid] = useState("");
-  const [otherName, setOtherName] = useState("");
+  const [users, setUsers] = useState([]);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [success, setSuccess] = useState("");
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const data = {
-      anonymous,
-      visibility: isPublic ? "public" : "private",
-      recipientType,
-      recipientUid: recipientType === "user" ? recipientUid : null,
-      recipientName: recipientType === "other" ? otherName : null,
-      text,
+  // Escuchar usuario logueado
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Cargar usuarios registrados (para el combo)
+  useEffect(() => {
+    const fetchUsers = async () => {
+      const snapshot = await getDocs(collection(db, "users"));
+      setUsers(snapshot.docs.map((doc) => doc.data()));
     };
-    console.log("Confession:", data);
-    // Luego aquí guardaremos en Firebase
+    fetchUsers();
+  }, []);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!currentUser) {
+      alert("Debes iniciar sesión para enviar confesiones");
+      return;
+    }
+
+    const finalRecipient = recipient === "OTRO" ? customRecipient : recipient;
+
+    await addDoc(collection(db, "confessions"), {
+      authorId: currentUser.uid,
+      authorUsername: currentUser.displayName || currentUser.email,
+      recipient: finalRecipient,
+      message: message,
+      isPublic,
+      createdAt: serverTimestamp(),
+    });
+
+    setRecipient("");
+    setCustomRecipient(""); // limpiar también
+    setMessage("");
+    setIsPublic(true);
+    setSuccess("Confesion enviada a su destino 💌");
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      style={{ marginTop: "1rem", maxWidth: "500px" }}
-    >
-      <UserSelect
-        recipientType={recipientType}
-        setRecipientType={setRecipientType}
-        recipientUid={recipientUid}
-        setRecipientUid={setRecipientUid}
-        otherName={otherName}
-        setOtherName={setOtherName}
+    <form className="confession-form" onSubmit={handleSubmit}>
+      <h2>Enviar confesión </h2>
+
+      <label>Destinatario:</label>
+      <select
+        value={recipient}
+        onChange={(e) => setRecipient(e.target.value)}
+        required
+      >
+        <option value="">-- Seleccionar --</option>
+        {users.map((u, i) => (
+          <option key={i} value={u.username}>
+            {u.username}
+          </option>
+        ))}
+        <option value="OTRO">OTRO</option>
+      </select>
+
+      {recipient === "OTRO" && (
+        <input
+          type="text"
+          placeholder="Nombre de tu crush"
+          value={customRecipient}
+          onChange={(e) => setCustomRecipient(e.target.value)}
+          required
+        />
+      )}
+
+      <label>Mensaje:</label>
+      <textarea
+        value={message}
+        onChange={(e) => setMessage(e.target.value)}
+        required
       />
 
-      <label>
-        Mensaje de amor:
-        <textarea
-          required
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder="Escribe tu confesión..."
-          style={{ width: "100%", minHeight: "100px", marginTop: "0.5rem" }}
+      <label className="checkbox-label">
+        Confesión pública
+        <input
+          type="checkbox"
+          checked={isPublic}
+          onChange={(e) => setIsPublic(e.target.checked)}
         />
       </label>
 
-      <div style={{ marginTop: "0.5rem" }}>
-        <label>
-          <input
-            type="checkbox"
-            checked={anonymous}
-            onChange={() => setAnonymous(!anonymous)}
-          />
-          Enviar como anónimo
-        </label>
-      </div>
+      <button type="submit">Enviar</button>
 
-      <div>
-        <label>
-          <input
-            type="checkbox"
-            checked={isPublic}
-            onChange={() => setIsPublic(!isPublic)}
-          />
-          Declaración pública
-        </label>
-      </div>
-
-      <button
-        type="submit"
-        style={{
-          marginTop: "1rem",
-          background: "#f06292",
-          color: "white",
-          border: "none",
-          padding: "0.5rem 1rem",
-          cursor: "pointer",
-        }}
-      >
-        Enviar
-      </button>
+      {success && (
+        <p style={{ color: "green", textAlign: "center" }}>{success}</p>
+      )}
     </form>
   );
 }
